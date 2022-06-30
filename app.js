@@ -32,7 +32,8 @@ mongoose.set('useCreateIndex', true);
 
 const userSchema = new mongoose.Schema ({
     email: String,
-    password: String
+    password: String,
+    secret: String
 });
 
 // passportLocalMongoose config
@@ -59,12 +60,46 @@ app.get('/register', function(req, res){
 });
 
 app.get('/secrets', function(req, res){
-    if (req.isAuthenticated()){
-        res.render('secrets');
+    User.find({'secret': {$ne: null}}, function(err, foundUsers){
+        if(err){
+            console.log(err);
+        }
+        else{
+            if(founderUsers){
+                res.prependOnceListener('secrets', {usersWithSecrets: foundUsers});
+            }
+        }
+    });
+});
+
+// Submit Route
+app.get('/submit', function(req, res){
+    if(req.isAuthenticated()){
+        res.render('submit');
     }
-    else{
+    else {
         res.redirect('/login');
     }
+});
+
+app.post('/submit', function(req, res) {
+    const submittedSecret = req.body.secret;
+
+    console.log(req.user.id);
+
+    User.findById(req.user.id, function(err, foundUser){
+        if(err){
+            console.log(err)
+        }
+        else{
+            if (foundUser){
+                foundUser.secret = submittedSecret;
+                foundUser.save(function(){
+                    res.redirect('secrets');
+                });
+            }
+        }
+    });
 });
 
 // Register Route
